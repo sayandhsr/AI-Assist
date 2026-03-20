@@ -8,7 +8,7 @@ import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, googleProvider, AI_CONFIG } from './lib/firebase/config';
 import { extractText, createChunks } from './lib/rag/DocumentProcessor';
 import { generateEmbedding, storeChunks, similaritySearch } from './lib/rag/VectorStore';
-import { getAIResponse } from './lib/api/openRouter';
+import { callAI } from './lib/api/openRouter';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -92,39 +92,44 @@ function App() {
     if (!input.trim()) return;
 
     const query = input.trim();
+    console.log("User Query:", query);
+    
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: query }]);
     setIsThinking(true);
 
     try {
-      let relevantChunks = [];
+      let context = "";
       
       // Mode Switching Logic
       if (documents.length > 0) {
         console.log("Mode: RAG (Documents detected)");
         const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
-        relevantChunks = await similaritySearch(queryEmbedding, 0.7);
+        const relevantChunks = await similaritySearch(queryEmbedding, 0.7);
         console.log("Retrieved Chunks:", relevantChunks);
+        
+        if (relevantChunks.length > 0) {
+          context = relevantChunks.map(c => c.text).join("\n\n");
+          setSources(relevantChunks);
+          setShowSourcePanel(true);
+        } else {
+          setSources([]);
+        }
       } else {
         console.log("Mode: General (No documents)");
       }
 
-      const aiResponse = await getAIResponse(query, relevantChunks, AI_CONFIG.OPENROUTER_KEY);
+      // ALL responses MUST come from OpenRouter API
+      console.log("Calling OpenRouter...");
+      const aiResponse = await callAI(query, context);
       setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
-      
-      if (relevantChunks.length > 0) {
-        setSources(relevantChunks);
-        setShowSourcePanel(true);
-      } else {
-        setSources([]);
-      }
+
     } catch (error) {
       console.error("Chat Error:", error);
       setMessages(prev => [...prev, { 
         role: 'ai', 
         text: error.message || "I’m having trouble connecting right now. Please try again in a moment." 
       }]);
-      showStatus(error.message, 'error');
     } finally {
       setIsThinking(false);
     }

@@ -22,8 +22,7 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// OpenRouter & HF Config
+// HF Config
 export const AI_CONFIG = {
-  OPENROUTER_KEY: "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",
   HF_KEY: "" 
 };
