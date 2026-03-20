@@ -88,7 +88,37 @@ function App() {
     }
   };
 
+  // Mandatory Debug: Test API on Load
+  useEffect(() => {
+    async function testAPI() {
+      const KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+      console.log("ENV KEY:", KEY);
+
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "openrouter/free",
+            messages: [{ role: "user", content: "hello" }]
+          })
+        });
+
+        const data = await res.json();
+        console.log("TEST SUCCESS:", data);
+      } catch (err) {
+        console.error("TEST FAILED:", err);
+      }
+    }
+    
+    testAPI();
+  }, []);
+
   const handleAsk = async () => {
+    console.log("SEND CLICKED");
     if (!input.trim()) return;
 
     const query = input.trim();
@@ -122,10 +152,11 @@ function App() {
       // ALL responses MUST come from OpenRouter API
       console.log("Calling OpenRouter...");
       const aiResponse = await callAI(query, context);
+      console.log("AI RESPONSE:", aiResponse);
       setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
 
     } catch (error) {
-      console.error("Chat Error:", error);
+      console.error("AI ERROR:", error);
       setMessages(prev => [...prev, { 
         role: 'ai', 
         text: error.message || "I’m having trouble connecting right now. Please try again in a moment." 
