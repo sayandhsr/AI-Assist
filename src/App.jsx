@@ -91,36 +91,38 @@ function App() {
   const handleAsk = async () => {
     if (!input.trim()) return;
 
-    if (documents.length === 0) {
-      showStatus("Please upload a document first", "info");
-      return;
-    }
-
     const query = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: query }]);
     setIsThinking(true);
 
     try {
-      const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
-      const relevantChunks = await similaritySearch(queryEmbedding, 0.7);
-
-      if (relevantChunks.length === 0) {
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          text: "I could not find this information in your documents." 
-        }]);
-        setSources([]);
+      let relevantChunks = [];
+      
+      // Mode Switching Logic
+      if (documents.length > 0) {
+        console.log("Mode: RAG (Documents detected)");
+        const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
+        relevantChunks = await similaritySearch(queryEmbedding, 0.7);
+        console.log("Retrieved Chunks:", relevantChunks);
       } else {
+        console.log("Mode: General (No documents)");
+      }
+
+      const aiResponse = await getAIResponse(query, relevantChunks, AI_CONFIG.OPENROUTER_KEY);
+      setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
+      
+      if (relevantChunks.length > 0) {
         setSources(relevantChunks);
-        const aiResponse = await getAIResponse(query, relevantChunks, AI_CONFIG.OPENROUTER_KEY);
-        setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
         setShowSourcePanel(true);
+      } else {
+        setSources([]);
       }
     } catch (error) {
+      console.error("Chat Error:", error);
       setMessages(prev => [...prev, { 
         role: 'ai', 
-        text: "AI service temporarily unavailable. Please try again later." 
+        text: error.message || "I’m having trouble connecting right now. Please try again in a moment." 
       }]);
       showStatus(error.message, 'error');
     } finally {
@@ -198,7 +200,6 @@ function App() {
             />
             <button 
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
               className={`w-full group flex items-center gap-4 p-4 rounded-2xl border-2 border-dashed transition-all text-sm font-semibold cursor-pointer ${
                 isDarkMode 
                 ? 'border-premium-gray/50 text-gray-400 hover:border-gold hover:bg-gold/5 hover:text-white' 
@@ -375,8 +376,7 @@ function App() {
               </div>
               <button 
                 onClick={handleAsk}
-                disabled={isThinking}
-                className="bg-gold hover:bg-gold-dark disabled:opacity-20 text-black font-black uppercase tracking-tighter py-4 px-10 rounded-xl transition-all hover:scale-[1.03] active:scale-95 shadow-xl shadow-gold/20 flex items-center gap-3 shrink-0 group/btn"
+                className="bg-gold hover:bg-gold-dark text-black font-black uppercase tracking-tighter py-4 px-10 rounded-xl transition-all hover:scale-[1.03] active:scale-95 shadow-xl shadow-gold/20 flex items-center gap-3 shrink-0 group/btn"
                 style={{ pointerEvents: 'auto' }}
               >
                 {isThinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />}

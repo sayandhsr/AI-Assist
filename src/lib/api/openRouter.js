@@ -1,36 +1,32 @@
 /**
  * openRouter.js
- * Handles AI chat completions via OpenRouter with strict RAG context.
+ * Standardized OpenRouter API integration with retry logic and RAG support.
  */
 
-export const getAIResponse = async (query, contextChunks, apiKey, model = "openrouter/free") => {
-  if (!apiKey) throw new Error("OpenRouter API Key is missing.");
+/**
+ * Calls the OpenRouter API to get a response.
+ * @param {string} query - The user's message.
+ * @param {import('./VectorStore').Chunk[]} chunks - Retrieved context chunks (empty for General Mode).
+ * @param {string} apiKey - OpenRouter API Key.
+ * @param {boolean} isRetry - Whether this is a retry attempt.
+ */
+export const getAIResponse = async (query, chunks = [], apiKey, isRetry = false) => {
+  const context = chunks.length > 0 ? chunks.map(c => c.text).join("\n\n") : null;
+  
+  // Mandatory Logging
+  console.log("User Query:", query);
+  console.log("Context:", context || "N/A (General Mode)");
 
-  const contextText = contextChunks
-    .map((c, i) => `[Source ${i + 1}]: ${c.text}`)
-    .join("\n\n");
-
-  const prompt = `You are a helpful AI customer support assistant.
-
-You MUST answer using ONLY the provided context.
-
-RULES:
-- Do NOT use outside knowledge
-- Do NOT guess
-- If the answer is not clearly in the context, respond politely that the information is not available in the uploaded documents.
-
-STYLE:
-- Be friendly and professional
-- Answer clearly and concisely
-- Sound like a real human support agent
+  const systemPrompt = chunks.length > 0 
+    ? `You are a document-based AI assistant.
+Answer ONLY using the provided context.
+Do NOT use outside knowledge.
+If the answer is not clearly in the context, say:
+'I could not find this information in your documents.'
 
 Context:
-${contextText}
-
-Question:
-${query}
-
-Answer:`;
+${context}`
+    : "You are a helpful AI assistant.";
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -38,22 +34,45 @@ Answer:`;
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "X-Title": "AUREX SUPPORT AI",
+        "HTTP-Referer": "https://aurex-support.ai", // Required by OpenRouter
+        "X-Title": "Aurex Support AI"
       },
       body: JSON.stringify({
-        model: model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.2, // Strictness
-        max_tokens: 1000,
-      }),
+        model: "openrouter/free",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: query }
+        ],
+        temperature: 0.2
+      })
     });
 
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
     const data = await response.json();
-    if (data.error) throw new Error(data.error.message);
     
-    return data.choices[0].message.content;
+    // Mandatory Logging
+    console.log("API Response:", data);
+
+    // Strict Response Parsing
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      return data.choices[0].message.content;
+    } else {
+      throw new Error("Invalid response format from OpenRouter API.");
+    }
+
   } catch (error) {
-    console.error("AI Error:", error);
-    throw new Error("AI service temporarily unavailable");
+    console.error("OpenRouter Error:", error);
+    
+    // Retry once
+    if (!isRetry) {
+      console.warn("Retrying OpenRouter call...");
+      return getAIResponse(query, chunks, apiKey, true);
+    }
+
+    // Fallback error message
+    throw new Error("I’m having trouble connecting right now. Please try again in a moment.");
   }
 };
