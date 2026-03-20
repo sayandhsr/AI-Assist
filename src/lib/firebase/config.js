@@ -24,6 +24,6 @@ export const googleProvider = new GoogleAuthProvider();
 
 // OpenRouter & HF Config
 export const AI_CONFIG = {
-  OPENROUTER_KEY: "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",
+  OPENROUTER_KEY: "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",
   HF_KEY: "" 
 };
