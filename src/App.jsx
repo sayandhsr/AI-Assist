@@ -14,8 +14,8 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([
-    { role: 'ai', text: 'Hello! I am your **AUREX Support AI**. I am here to help answer questions based strictly on the documents you upload.' },
-    { role: 'ai', text: 'Please upload a PDF, DOCX, or TXT file using the sidebar to get started.' }
+    { role: 'ai', text: 'Hello! I am your **AUREX Support AI**. I am here to help answer your questions.' },
+    { role: 'ai', text: 'You can chat with me normally, or upload a document in the sidebar for precise, context-based answers.' }
   ]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -326,7 +326,7 @@ function App() {
             <div className={`w-2 h-2 rounded-full ${documents.length > 0 ? 'bg-green-500' : 'bg-gray-500'} animate-pulse`} />
             <div className="flex flex-col">
               <span className={`uppercase tracking-widest text-[10px] font-black ${theme.textSecondary}`}>RAG Network Status</span>
-              <span className="text-xs font-bold leading-none">{documents.length > 0 ? `${documents.length} Core Repositories Active` : 'Awaiting Knowledge Injection'}</span>
+              <span className="text-xs font-bold leading-none">{documents.length > 0 ? `${documents.length} Core Repositories Active` : 'General Intelligence Active • Global Mode'}</span>
             </div>
           </div>
           <button 
@@ -405,7 +405,7 @@ function App() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
-                  placeholder={documents.length > 0 ? "Ask anything..." : "Please initialize the knowledge core first"}
+                  placeholder="You can chat normally or upload documents for smarter answers."
                   className={`flex-1 bg-transparent border-none outline-none py-4 px-2 text-[16px] font-medium leading-none tracking-tight ${theme.text} placeholder-gray-500/50 cursor-text`}
                   style={{ pointerEvents: 'auto' }}
                 />
