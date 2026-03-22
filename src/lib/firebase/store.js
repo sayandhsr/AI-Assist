@@ -93,20 +93,29 @@ export async function loadMessagesFromFirestore(userId) {
 }
 
 /**
- * Clear all messages for a user.
+ * Clear messages for a user, optionally scoped to a projectId.
  */
-export async function clearFirestoreMessages(userId) {
+export async function clearFirestoreMessages(userId, projectId = null) {
   if (!userId) return;
   try {
-    const q = query(
-      collection(db, "chats"),
-      where("userId", "==", userId)
-    );
+    let q;
+    if (projectId) {
+      q = query(
+        collection(db, "chats"),
+        where("userId", "==", userId),
+        where("projectId", "==", projectId)
+      );
+    } else {
+      q = query(
+        collection(db, "chats"),
+        where("userId", "==", userId)
+      );
+    }
     const snapshot = await getDocs(q);
     const batch = writeBatch(db);
     snapshot.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
-    console.log("✅ Firestore: Cleared all messages");
+    console.log("✅ Firestore: Cleared messages");
   } catch (error) {
     console.error("❌ Firestore clear failed:", error);
   }

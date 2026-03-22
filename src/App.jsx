@@ -9,10 +9,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, googleProvider, AI_CONFIG } from './lib/firebase/config';
-import { extractText, createChunks } from './lib/rag/DocumentProcessor';
-import { generateEmbedding, storeChunks, similaritySearch } from './lib/rag/VectorStore';
 import { callAI } from './lib/api/openRouter';
-import { saveMessageToFirestore, loadMessagesFromFirestore } from './lib/firebase/store';
+import { saveMessageToFirestore, loadMessagesFromFirestore, clearFirestoreMessages } from './lib/firebase/store';
+import { extractText, createChunks } from './lib/rag/DocumentProcessor';
+import { generateEmbedding, storeChunks, similaritySearch, deleteDocumentChunks } from './lib/rag/VectorStore';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -208,6 +208,31 @@ function App() {
     }
   };
 
+  const handleRemoveDocument = async (docId, e) => {
+    e.stopPropagation();
+    try {
+      await deleteDocumentChunks(docId);
+      updateCurrentProject(p => ({
+        ...p,
+        documents: p.documents.filter(d => d.id !== docId)
+      }));
+      showStatus("Document deleted", "info");
+    } catch (err) {
+      console.error(err);
+      showStatus("Failed to delete document", "error");
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (confirm("Are you sure you want to clear this entire chat?")) {
+      updateCurrentProject(p => ({ ...p, messages: [] }));
+      if (user?.uid) {
+        await clearFirestoreMessages(user.uid, activeProjectId);
+      }
+      showStatus("Chat messages cleared", "info");
+    }
+  };
+
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
     setLastCopiedId(id);
@@ -248,8 +273,9 @@ function App() {
       if (documents.length > 0 && !isSmallTalk) {
         console.log("Mode: RAG (Documents detected)");
         const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
-        // Lower threshold to catch vague queries like "what is this pdf about"
-        const relevantChunks = await similaritySearch(queryEmbedding, 0.4); 
+        // Pass the valid document IDs to filter similarity search
+        const validDocIds = documents.map(d => d.id);
+        const relevantChunks = await similaritySearch(queryEmbedding, 0.4, validDocIds); 
         
         if (relevantChunks.length > 0) {
           context = relevantChunks.map(c => c.text).join("\n\n");
@@ -447,12 +473,20 @@ function App() {
                 
                 <div className="mt-6 space-y-3">
                   {documents.map(doc => (
-                    <div key={doc.id} className={`flex items-center gap-3 p-4 rounded-2xl border ${isDarkMode ? 'bg-premium-gray/30 border-white/5' : 'bg-gray-50 border-[#E5E7EB] shadow-sm'}`}>
-                      <FileText className="w-4 h-4 text-gold shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-black truncate">{doc.name}</p>
-                        <p className="text-[9px] opacity-40 font-mono tracking-tighter uppercase font-bold">{doc.chunkCount} Nodes</p>
+                    <div key={doc.id} className={`group flex items-center justify-between p-4 rounded-2xl border ${isDarkMode ? 'bg-premium-gray/30 border-white/5' : 'bg-gray-50 border-[#E5E7EB] shadow-sm'}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileText className="w-4 h-4 text-gold shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-black truncate">{doc.name}</p>
+                          <p className="text-[9px] opacity-40 font-mono tracking-tighter uppercase font-bold">{doc.chunkCount} Nodes</p>
+                        </div>
                       </div>
+                      <button 
+                        onClick={(e) => handleRemoveDocument(doc.id, e)}
+                        className={`p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-100 text-red-500'}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -526,18 +560,27 @@ function App() {
               <span className="text-xs font-black leading-none">{documents.length > 0 ? 'NEURAL LINK' : 'GENERAL AI'}</span>
             </div>
           </div>
-          <button 
-            onClick={() => setShowSourcePanel(!showSourcePanel)}
-            className={`flex items-center gap-2 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${
-              showSourcePanel 
-              ? 'bg-gold text-black shadow-lg shadow-gold/40' 
-              : `${isDarkMode ? 'bg-white/5 border-white/5 text-gray-400' : 'bg-white border-[#E5E7EB] text-[#6B7280] shadow-sm'} border`
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span className="hidden sm:inline">Inspect Trace</span>
-            {sources.length > 0 && <span className="bg-current/10 px-2 rounded-lg ml-1">{sources.length}</span>}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleClearChat}
+              className={`hidden sm:flex items-center gap-2 px-4 py-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${isDarkMode ? 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400 hover:bg-red-500/10' : 'bg-white border-[#E5E7EB] text-[#6B7280] shadow-sm hover:text-red-500 hover:bg-red-50'} border`}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Clear</span>
+            </button>
+            <button 
+              onClick={() => setShowSourcePanel(!showSourcePanel)}
+              className={`flex items-center gap-2 px-6 py-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${
+                showSourcePanel 
+                ? 'bg-gold text-black shadow-lg shadow-gold/40' 
+                : `${isDarkMode ? 'bg-white/5 border-white/5 text-gray-400' : 'bg-white border-[#E5E7EB] text-[#6B7280] shadow-sm'} border`
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">Inspect Trace</span>
+              {sources.length > 0 && <span className="bg-current/10 px-2 rounded-lg ml-1">{sources.length}</span>}
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-12 space-y-10 scroll-smooth custom-scrollbar no-scrollbar relative">

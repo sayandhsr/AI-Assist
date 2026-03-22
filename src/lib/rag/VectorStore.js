@@ -98,8 +98,11 @@ export const storeChunks = async (chunksWithEmbeddings) => {
 
 /**
  * Searches for relevant chunks based on a query vector.
+ * @param {Array} queryVector
+ * @param {number} threshold
+ * @param {Array<string>} validDocIds - Only search within these document IDs
  */
-export const similaritySearch = async (queryVector, threshold = 0.7) => {
+export const similaritySearch = async (queryVector, threshold = 0.7, validDocIds = null) => {
   const db = await initDB();
   const tx = db.transaction(STORE_NAME, 'readonly');
   const store = tx.objectStore(STORE_NAME);
@@ -109,6 +112,7 @@ export const similaritySearch = async (queryVector, threshold = 0.7) => {
   });
 
   const results = allData
+    .filter(item => !validDocIds || validDocIds.includes(item.docId))
     .map(item => ({
       ...item,
       score: cosineSimilarity(queryVector, item.embedding)
@@ -118,4 +122,27 @@ export const similaritySearch = async (queryVector, threshold = 0.7) => {
     .slice(0, 5);
 
   return results;
+};
+
+/**
+ * Deletes all chunks associated with a specific docId.
+ */
+export const deleteDocumentChunks = async (docId) => {
+  const db = await initDB();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  const index = store.index('docId');
+  
+  const req = index.openCursor(IDBKeyRange.only(docId));
+  req.onsuccess = (e) => {
+    const cursor = e.target.result;
+    if (cursor) {
+      cursor.delete();
+      cursor.continue();
+    }
+  };
+
+  return new Promise((resolve) => {
+    tx.oncomplete = () => resolve();
+  });
 };
