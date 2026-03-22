@@ -35,16 +35,20 @@ function App() {
   const [activeProjectId, setActiveProjectId] = useState('default');
   
   // UI Transient State
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(''); // UI State
+  const [statusMessage, setStatusMessage] = useState(null);
   const [isThinking, setIsThinking] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [sources, setSources] = useState([]);
   const [showSourcePanel, setShowSourcePanel] = useState(false);
-  const [statusMessage, setStatusMessage] = useState(null);
+  const [sources, setSources] = useState([]);
   const [lastCopiedId, setLastCopiedId] = useState(null);
-
   const fileInputRef = useRef(null);
+  
+  // Smart Scroll Refs
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const isUserScrollingRef = useRef(false);
+
   const hasLoaded = useRef(false);
   const saveTimerRef = useRef(null);
 
@@ -112,8 +116,22 @@ function App() {
     } catch (e) { /* quota exceeded, ignore */ }
   }, [projects, activeProjectId, isSidebarCollapsed]);
 
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+    // If the user scrolls up more than 100px from the bottom, they are reading history
+    isUserScrollingRef.current = distanceToBottom > 100;
+  };
+
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const lastMessage = messages[messages.length - 1];
+    const isUserMessage = lastMessage?.role === 'user';
+    
+    // Auto-scroll if user is already at the bottom, OR if they just sent a new message
+    if (!isUserScrollingRef.current || isUserMessage) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isThinking]);
 
   // Project Actions
@@ -583,7 +601,11 @@ function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-12 space-y-10 scroll-smooth custom-scrollbar no-scrollbar relative">
+        <div 
+          ref={chatContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 md:p-12 space-y-10 scroll-smooth custom-scrollbar no-scrollbar relative"
+        >
           {messages.map((msg, idx) => (
             <motion.div 
               initial={{ opacity: 0, y: 15 }}
