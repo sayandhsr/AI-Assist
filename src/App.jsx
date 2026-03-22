@@ -115,7 +115,6 @@ function App() {
       localStorage.setItem('aurex_sidebar_collapsed', JSON.stringify(isSidebarCollapsed));
     } catch (e) { /* quota exceeded, ignore */ }
   }, [projects, activeProjectId, isSidebarCollapsed]);
-
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -348,7 +347,7 @@ function App() {
   };
 
   return (
-    <div className={`h-[100dvh] ${theme.bg} ${theme.text} font-inter flex flex-col md:flex-row overflow-hidden antialiased`}>
+    <div className={`chat-wrapper flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden antialiased ${theme.bg} ${theme.text} font-inter`}>
       
       {/* Mobile Top Header */}
       <div className={`md:hidden flex items-center justify-between p-4 border-b ${theme.border} ${theme.panel}/80 backdrop-blur-xl z-50`}>
@@ -604,7 +603,7 @@ function App() {
         <div 
           ref={chatContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-4 md:p-12 space-y-10 scroll-smooth custom-scrollbar no-scrollbar relative"
+          className="messages-container flex-1 overflow-y-auto p-4 md:p-12 space-y-10 scroll-smooth custom-scrollbar no-scrollbar relative pb-[120px]"
         >
           {messages.map((msg, idx) => (
             <motion.div 
@@ -668,10 +667,10 @@ function App() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 md:p-12 pt-2 relative z-40">
+        <div className={`input-container sticky bottom-0 w-full p-4 md:p-8 pt-4 z-40 ${isDarkMode ? 'bg-premium-black/80' : 'bg-[#F9FAFB]/80'} backdrop-blur-xl border-t ${theme.border} shadow-[0_-2px_20px_rgba(0,0,0,0.3)]`}>
           <div className="max-w-5xl mx-auto relative group">
             
-            <div className="flex flex-wrap justify-center gap-2.5 mb-8">
+            <div className="flex flex-wrap justify-center gap-2.5 mb-6">
               {suggestedQuestions.map((q, i) => (
                 <button 
                   key={i}
