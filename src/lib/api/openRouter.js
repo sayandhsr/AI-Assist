@@ -1,6 +1,6 @@
 /**
  * openRouter.js
- * Implementation of callAI for AUREX SUPPORT AI.
+ * Implementation of callAI for SPURCE AI.
  */
 
 /**
@@ -25,7 +25,7 @@ export async function callAI(message, context = "") {
     ? [
         {
           role: "system",
-          content: "You are AUREX SUPPORT AI, a sophisticated assistant. Use the provided context to answer the user's question accurately. If the context doesn't contain the answer, you can use your general knowledge to provide a helpful response, but prioritize the context first. Mention if the information comes from the documents."
+          content: "You are SPURCE, a sophisticated AI assistant. Use the provided context to answer the user's question accurately. If the context doesn't contain the answer, you can use your general knowledge to provide a helpful response, but prioritize the context first. Mention if the information comes from the documents."
         },
         {
           role: "user",
@@ -35,7 +35,7 @@ export async function callAI(message, context = "") {
     : [
         {
           role: "system",
-          content: "You are AUREX SUPPORT AI, a sophisticated and helpful assistant. Greet the user warmly and answer their questions professionally."
+          content: "You are SPURCE, a sophisticated and helpful AI assistant. Greet the user warmly and answer their questions professionally."
         },
         {
           role: "user",
@@ -49,8 +49,8 @@ export async function callAI(message, context = "") {
       headers: {
         Authorization: `Bearer ${API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://aurex-support.ai", // Required by OpenRouter
-        "X-Title": "Aurex Support AI"
+        "HTTP-Referer": "https://spurce.ai", // Required by OpenRouter
+        "X-Title": "SPURCE AI"
       },
       body: JSON.stringify({
         model: "google/gemini-2.0-flash-lite-001",

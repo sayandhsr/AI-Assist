@@ -3,7 +3,7 @@
  * Handles embedding storage (IndexedDB), similarity search, and retrieval.
  */
 
-const DB_NAME = 'AurexVectorDB';
+const DB_NAME = 'SpurceVectorDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'chunks';
 

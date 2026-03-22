@@ -26,7 +26,7 @@ function App() {
       id: 'default', 
       name: 'Initial Session', 
       messages: [
-        { id: '1', role: 'ai', text: 'Hello! I am your **AUREX Support AI**. I am here to help answer your questions.' },
+        { id: '1', role: 'ai', text: 'Hello! I am **SPURCE**, your sophisticated AI assistant.' },
         { id: '2', role: 'ai', text: 'You can chat with me normally, or upload a document in the sidebar for precise, context-based answers.' }
       ], 
       documents: [] 
@@ -64,15 +64,32 @@ function App() {
     "Explain the warranty policy"
   ];
 
+  const PRESET_RESPONSES = {
+    'good': 'Glad to hear that! How else can I assist you today?',
+    'great': 'Excellent! I am here if you need anything else.',
+    'awesome': 'Fantastic! Let me know if you have more questions.',
+    'bad': 'I am sorry to hear that. Is there anything specific I can help improve?',
+    'ok': 'Understood. What is next on your mind?',
+    'okay': 'Got it. I am ready for your next inquiry.',
+    'yes': 'Perfect. Please let me know how you would like to proceed.',
+    'no': 'No problem at all. I am here whenever you need me.',
+    'thanks': 'You are very welcome! Happy to help.',
+    'thank you': 'My pleasure! Let me know if there is anything else.',
+    'hi': 'Hello! I am SPURCE. How can I help you today?',
+    'hello': 'Greetings! I am SPURCE. What is on your mind?',
+    'hey': 'Hey there! How can I assist you right now?',
+    'do': 'I can process documents, answer questions, and assist with data. What would you like me to do?'
+  };
+
   // === PERSISTENCE LAYER ===
 
   // Step 1: Load from localStorage immediately (fast boot for guests)
   useEffect(() => {
-    const savedSidebar = localStorage.getItem('aurex_sidebar_collapsed');
+    const savedSidebar = localStorage.getItem('spurce_sidebar_collapsed');
     if (savedSidebar) setIsSidebarCollapsed(JSON.parse(savedSidebar));
 
-    const savedProjects = localStorage.getItem('aurex_projects_v2');
-    const savedActiveId = localStorage.getItem('aurex_active_id_v2');
+    const savedProjects = localStorage.getItem('spurce_projects_v1');
+    const savedActiveId = localStorage.getItem('spurce_active_id_v1');
     if (savedProjects) {
       try {
         const parsed = JSON.parse(savedProjects);
@@ -110,9 +127,9 @@ function App() {
   useEffect(() => {
     if (!hasLoaded.current) return;
     try {
-      localStorage.setItem('aurex_projects_v2', JSON.stringify(projects));
-      localStorage.setItem('aurex_active_id_v2', activeProjectId);
-      localStorage.setItem('aurex_sidebar_collapsed', JSON.stringify(isSidebarCollapsed));
+      localStorage.setItem('spurce_projects_v1', JSON.stringify(projects));
+      localStorage.setItem('spurce_active_id_v1', activeProjectId);
+      localStorage.setItem('spurce_sidebar_collapsed', JSON.stringify(isSidebarCollapsed));
     } catch (e) { /* quota exceeded, ignore */ }
   }, [projects, activeProjectId, isSidebarCollapsed]);
   const handleScroll = () => {
@@ -264,9 +281,26 @@ function App() {
     const query = textToProcess.trim();
     console.log("SENDING QUERY:", query);
     
-    // Small Talk Detection
-    const smallTalkKeywords = ['hello', 'hi', 'hey', 'thanks', 'thank you', 'thank u', 'bye', 'good morning', 'good evening'];
-    const isSmallTalk = smallTalkKeywords.some(kw => query.toLowerCase().includes(kw)) && query.split(' ').length < 4;
+    // 0) Check for Preset Responses (Fast & Cost-Effective)
+    const normalizedQuery = query.toLowerCase().replace(/[^\w\s]/gi, '');
+    if (PRESET_RESPONSES[normalizedQuery]) {
+      const presetText = PRESET_RESPONSES[normalizedQuery];
+      setInput('');
+      const uId = Date.now().toString();
+      updateCurrentProject(p => ({
+        ...p,
+        messages: [
+          ...p.messages, 
+          { id: uId, role: 'user', text: query },
+          { id: (Date.now() + 1).toString(), role: 'ai', text: presetText }
+        ]
+      }));
+      if (user?.uid) {
+        saveMessageToFirestore(user.uid, 'user', query);
+        saveMessageToFirestore(user.uid, 'ai', presetText);
+      }
+      return;
+    }
 
     setInput('');
     const userMsgId = Date.now().toString();
@@ -362,7 +396,7 @@ function App() {
           <div className="w-8 h-8 bg-gold rounded-lg flex items-center justify-center shadow-lg shadow-gold/20">
             <Shield className="text-black w-5 h-5" />
           </div>
-          <span className="font-black italic text-sm">AUREX <span className="text-gold">SUPPORT</span></span>
+          <span className="font-black italic text-sm tracking-widest">SPURCE</span>
         </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-3 active:scale-95 transition-transform">
           {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -401,8 +435,8 @@ function App() {
                   <Shield className="text-black w-6 h-6" />
                 </div>
                 <div className="flex flex-col">
-                  <h1 className="text-lg font-black tracking-tight leading-none italic">
-                    AUREX <span className="text-gold">SUPPORT</span>
+                  <h1 className="text-lg font-black tracking-[0.2em] leading-none italic uppercase">
+                    SPURCE
                   </h1>
                 </div>
               </div>
@@ -666,7 +700,7 @@ function App() {
                 <Loader2 className="w-5 h-5 text-gold animate-spin" />
               </div>
               <div className={`px-8 py-6 rounded-[30px] rounded-tl-sm text-[11px] font-black uppercase tracking-widest italic opacity-60 border border-dashed ${theme.border}`}>
-                Aurex protocol active...
+                SPURCE protocol active...
               </div>
             </div>
           )}
@@ -703,7 +737,7 @@ function App() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
-                  placeholder="Inquire with Aurex Protocol..."
+                  placeholder="Inquire with SPURCE..."
                   className={`flex-1 bg-transparent border-none outline-none py-4 text-[16px] font-bold tracking-tight ${theme.text} placeholder-gray-500/50 cursor-text`}
                 />
               </div>
