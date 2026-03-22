@@ -348,7 +348,7 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen ${theme.bg} ${theme.text} font-inter flex flex-col md:flex-row overflow-hidden antialiased`}>
+    <div className={`h-[100dvh] ${theme.bg} ${theme.text} font-inter flex flex-col md:flex-row overflow-hidden antialiased`}>
       
       {/* Mobile Top Header */}
       <div className={`md:hidden flex items-center justify-between p-4 border-b ${theme.border} ${theme.panel}/80 backdrop-blur-xl z-50`}>
