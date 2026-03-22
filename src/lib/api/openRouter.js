@@ -65,18 +65,24 @@ export async function callAI(message, context = "") {
     console.log("API RESPONSE:", data);
 
     if (!response.ok) {
-      throw new Error(data.error?.message || "API request failed");
+      console.error("API Error Status:", response.status);
+      const errorMsg = data.error?.message || `API request failed with status ${response.status}`;
+      throw new Error(errorMsg);
     }
 
     if (!data?.choices?.length) {
-      throw new Error("Invalid API response");
+      console.error("Malformed API Response:", data);
+      throw new Error("Invalid API response format");
     }
 
     return data.choices[0].message.content;
 
   } catch (error) {
-    console.error("OpenRouter Error:", error);
-    // User requested friendly error message
-    throw new Error("I’m having trouble connecting right now. Please try again in a moment.");
+    console.error("OpenRouter Detail Error:", error);
+    // Provide more specific feedback
+    const message = error.message && !error.message.includes("fetch") 
+      ? `AI Error: ${error.message}` 
+      : "I’m having trouble connecting to the AI. Please check your internet or API key.";
+    throw new Error(message);
   }
 }
