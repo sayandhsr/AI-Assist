@@ -12,6 +12,13 @@ body {
   @apply bg-premium-black text-white antialiased;
 }
 
+html, body, #root {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }
