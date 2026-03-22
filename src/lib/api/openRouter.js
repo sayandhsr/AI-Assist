@@ -21,11 +21,11 @@ export async function callAI(message, context = "") {
     throw new Error("Missing API key");
   }
 
-  const messages = context
+  const messages = context && context !== "[NO RELEVANT INFO]"
     ? [
         {
           role: "system",
-          content: "You are AUREX SUPPORT AI. Answer the user's question ONLY using the provided context. If the context says '[NO RELEVANT INFO]', you MUST reply exactly with: 'I could not find information about this in your uploaded document. Could you please clarify your question?' Do NOT use outside knowledge."
+          content: "You are AUREX SUPPORT AI, a sophisticated assistant. Use the provided context to answer the user's question accurately. If the context doesn't contain the answer, you can use your general knowledge to provide a helpful response, but prioritize the context first. Mention if the information comes from the documents."
         },
         {
           role: "user",
@@ -35,7 +35,7 @@ export async function callAI(message, context = "") {
     : [
         {
           role: "system",
-          content: "You are a helpful assistant."
+          content: "You are AUREX SUPPORT AI, a sophisticated and helpful assistant. Greet the user warmly and answer their questions professionally."
         },
         {
           role: "user",

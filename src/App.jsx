@@ -285,22 +285,29 @@ function App() {
     setIsThinking(true);
 
     try {
+      // 2) AI CALL (Check for document context)
       let context = "";
-      
-      if (documents.length > 0 && !isSmallTalk) {
-        console.log("Mode: RAG (Documents detected)");
-        const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
-        // Pass the valid document IDs to filter similarity search
-        const validDocIds = documents.map(d => d.id);
-        const relevantChunks = await similaritySearch(queryEmbedding, 0.4, validDocIds); 
+      if (documents.length > 0) {
+        // Small Talk Guard: If message is very short (~ < 10 chars) and doesn't look like a question
+        const isSmallTalk = query.length < 15 && !query.includes('?'); 
         
-        if (relevantChunks.length > 0) {
-          context = relevantChunks.map(c => c.text).join("\n\n");
-          setSources(relevantChunks);
-          if (window.innerWidth > 1024) setShowSourcePanel(true);
+        if (!isSmallTalk) {
+          console.log("Mode: RAG (Documents detected)");
+          const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
+          // Pass the valid document IDs to filter similarity search
+          const validDocIds = documents.map(d => d.id);
+          const relevantChunks = await similaritySearch(queryEmbedding, 0.4, validDocIds); 
+          
+          if (relevantChunks.length > 0) {
+            context = relevantChunks.map(c => c.text).join("\n\n");
+            setSources(relevantChunks);
+            if (window.innerWidth > 1024) setShowSourcePanel(true);
+          } else {
+            setSources([]);
+            context = ""; // Let AI handle it gracefully without forcing an error
+          }
         } else {
-          setSources([]);
-          context = "[NO RELEVANT INFO]"; // Enforce strict failure rather than generic hallucination
+          console.log("Mode: General Chat (Small talk detected)");
         }
       }
 
