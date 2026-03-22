@@ -53,7 +53,7 @@ export async function callAI(message, context = "") {
         "X-Title": "Aurex Support AI"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-lite-preview-02-05:free",
+        model: "google/gemini-2.0-flash-exp:free",
         messages: messages,
         temperature: 0.2
       })
