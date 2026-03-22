@@ -21,11 +21,16 @@ export async function callAI(message, context = "") {
     throw new Error("Missing API key");
   }
 
+  const currentDate = new Date().toLocaleString();
+  const systemContext = `You are SPURCE, a sophisticated AI assistant. 
+Current Knowledge Date: ${currentDate}.
+Always maintain awareness of this current date.`;
+
   const messages = context && context !== "[NO RELEVANT INFO]"
     ? [
         {
           role: "system",
-          content: "You are SPURCE, a sophisticated AI assistant. Use the provided context to answer the user's question accurately. If the context doesn't contain the answer, you can use your general knowledge to provide a helpful response, but prioritize the context first. Mention if the information comes from the documents."
+          content: `${systemContext} Use the provided context to answer the user's question accurately. If the context doesn't contain the answer, you can use your general knowledge to provide a helpful response, but prioritize the context first. Mention if the information comes from the documents.`
         },
         {
           role: "user",
@@ -35,7 +40,7 @@ export async function callAI(message, context = "") {
     : [
         {
           role: "system",
-          content: "You are SPURCE, a sophisticated and helpful AI assistant. Greet the user warmly and answer their questions professionally."
+          content: `${systemContext} Greet the user warmly and answer their questions professionally.`
         },
         {
           role: "user",
