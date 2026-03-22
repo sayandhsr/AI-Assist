@@ -248,7 +248,8 @@ function App() {
       if (documents.length > 0 && !isSmallTalk) {
         console.log("Mode: RAG (Documents detected)");
         const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
-        const relevantChunks = await similaritySearch(queryEmbedding, 0.7);
+        // Lower threshold to catch vague queries like "what is this pdf about"
+        const relevantChunks = await similaritySearch(queryEmbedding, 0.4); 
         
         if (relevantChunks.length > 0) {
           context = relevantChunks.map(c => c.text).join("\n\n");
@@ -256,6 +257,7 @@ function App() {
           if (window.innerWidth > 1024) setShowSourcePanel(true);
         } else {
           setSources([]);
+          context = "[NO RELEVANT INFO]"; // Enforce strict failure rather than generic hallucination
         }
       }
 

@@ -25,7 +25,7 @@ export async function callAI(message, context = "") {
     ? [
         {
           role: "system",
-          content: "Answer ONLY using the provided context. Do NOT use outside knowledge. If the answer is not clearly in the context, say: 'I could not find this information in your documents.'"
+          content: "You are AUREX SUPPORT AI. Answer the user's question ONLY using the provided context. If the context says '[NO RELEVANT INFO]', you MUST reply exactly with: 'I could not find information about this in your uploaded document. Could you please clarify your question?' Do NOT use outside knowledge."
         },
         {
           role: "user",
@@ -53,7 +53,7 @@ export async function callAI(message, context = "") {
         "X-Title": "Aurex Support AI"
       },
       body: JSON.stringify({
-        model: "openrouter/free",
+        model: "google/gemini-2.5-flash-lite-preview-02-05:free",
         messages: messages,
         temperature: 0.2
       })
