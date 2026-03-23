@@ -12,7 +12,7 @@ import { auth, googleProvider, AI_CONFIG } from './lib/firebase/config';
 import { callAI } from './lib/api/openRouter';
 import { saveMessageToFirestore, loadMessagesFromFirestore, clearFirestoreMessages } from './lib/firebase/store';
 import { extractText, createChunks } from './lib/rag/DocumentProcessor';
-import { generateEmbedding, storeChunks, similaritySearch, deleteDocumentChunks } from './lib/rag/VectorStore';
+import { generateEmbedding, storeChunks, similaritySearch, deleteDocumentChunks, initDB } from './lib/rag/VectorStore';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
