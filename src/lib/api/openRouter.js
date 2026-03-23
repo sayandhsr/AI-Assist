@@ -7,8 +7,9 @@
  * Calls the OpenRouter API to get a response.
  * @param {string} message - The user's query.
  * @param {string} context - The retrieved document context (optional).
+ * @param {string[]} docNames - List of uploaded document names (optional).
  */
-export async function callAI(message, context = "") {
+export async function callAI(message, context = "", docNames = []) {
   const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
   // Mandatory Logging
@@ -22,9 +23,11 @@ export async function callAI(message, context = "") {
   }
 
   const currentDate = new Date().toLocaleString();
+  const docList = docNames.length > 0 ? `Active Files: ${docNames.join(", ")}` : "No individual files uploaded.";
   const systemContext = `You are SPURCE, a sophisticated AI assistant. 
 Current Knowledge Date: ${currentDate}.
-Always maintain awareness of this current date.`;
+${docList}
+Always maintain awareness of the current date and any active files listed above.`;
 
   const messages = context && context !== "[NO RELEVANT INFO]"
     ? [

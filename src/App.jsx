@@ -330,23 +330,44 @@ function App() {
           const queryEmbedding = await generateEmbedding(query, AI_CONFIG.HF_KEY);
           // Pass the valid document IDs to filter similarity search
           const validDocIds = documents.map(d => d.id);
-          const relevantChunks = await similaritySearch(queryEmbedding, 0.4, validDocIds); 
+          const isSummarize = query.toLowerCase().includes('summarize') || query.toLowerCase().includes('summary');
+          
+          // Use a more relaxed threshold for summarization or generic queries
+          const threshold = isSummarize ? 0.3 : 0.4;
+          const relevantChunks = await similaritySearch(queryEmbedding, threshold, validDocIds); 
           
           if (relevantChunks.length > 0) {
             context = relevantChunks.map(c => c.text).join("\n\n");
             setSources(relevantChunks);
             if (window.innerWidth > 1024) setShowSourcePanel(true);
+          } else if (isSummarize && documents.length > 0) {
+            // Fallback: If summarizing and no match, pull the first 3 chunks to give AI a starting point
+            console.log("RAG Fallback: Pulling first 3 chunks for summary...");
+            const db = await initDB();
+            const tx = db.transaction('chunks', 'readonly');
+            const store = tx.objectStore('chunks');
+            const allReq = store.getAll();
+            const allData = await new Promise(resolve => {
+              allReq.onsuccess = () => resolve(allReq.result);
+            });
+            const firstChunks = allData
+              .filter(item => validDocIds.includes(item.docId))
+              .slice(0, 3);
+            
+            context = firstChunks.map(c => c.text).join("\n\n");
+            setSources(firstChunks);
           } else {
             setSources([]);
-            context = ""; // Let AI handle it gracefully without forcing an error
+            context = ""; 
           }
         } else {
           console.log("Mode: General Chat (Small talk detected)");
         }
       }
 
-      console.log("Calling OpenRouter...");
-      const aiResponse = await callAI(query, context);
+      console.log("Calling OpenRouter with Document Awareness...");
+      const docNames = documents.map(d => d.name);
+      const aiResponse = await callAI(query, context, docNames);
       
       // 3) Add AI response to UI
       updateCurrentProject(p => ({
